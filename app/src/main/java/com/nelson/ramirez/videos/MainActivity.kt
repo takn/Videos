@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
-import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,8 +26,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.nelson.ramirez.videos.home.data.ContentItem
 import com.nelson.ramirez.videos.home.data.ContentItemType
-import com.nelson.ramirez.videos.home.data.Shelf
 import com.nelson.ramirez.videos.home.data.HomePageDataSource
+import com.nelson.ramirez.videos.home.data.Shelf
 import com.nelson.ramirez.videos.ui.components.Episode
 import com.nelson.ramirez.videos.ui.components.Live
 import com.nelson.ramirez.videos.ui.components.Show
@@ -40,10 +40,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             VideosTheme {
-                //TODO this would be exposed and injected via a viewmodel
+                //TODO this data can be exposed as a compose state from a viewmodel.
+                // Doing so will allow the data to be updated and recomposed when the data changes.
                 HomePageDataSource().homePage?.let {
                     HomeScreenContent(
-                        it.shelves
+                        shelfList = it.shelves
                     )
                 }
             }
@@ -54,7 +55,6 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreenContent(shelfList: List<Shelf>) {
-    val shelves = rememberPagerState(pageCount = { shelfList.size })
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -67,30 +67,32 @@ fun HomeScreenContent(shelfList: List<Shelf>) {
                     )
                 )
             )
-            .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+            .padding(top = 48.dp, start = 16.dp, end = 0.dp, bottom = 32.dp)
     ) {
-        VerticalPager(state = shelves, pageSize = PageSize.Fixed(300.dp)) { shelfIndex: Int ->
-            Text(
-                style = MaterialTheme.typography.titleLarge,
-                text = shelfList[shelfIndex].title,
-                color = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth()
+        LazyColumn {
+            items(shelfList.size) { index ->
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    style = MaterialTheme.typography.titleLarge,
+                    text = shelfList[index].title,
+                    color = Color.White,
+                    modifier = Modifier
+                        .fillMaxWidth()
 
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            val content = rememberPagerState {
-                shelfList[shelfIndex].items.size
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                val content = rememberPagerState {
+                    shelfList[index].items.size
+                }
+                HorizontalPager(
+                    state = content,
+                    pageSize = PageSize.Fixed(150.dp),
+                    pageSpacing = 16.dp,
+                    verticalAlignment = androidx.compose.ui.Alignment.Top
+                ) { itemIndex: Int ->
+                    ContentItem(shelfList[index].items[itemIndex])
+                }
             }
-            HorizontalPager(
-                state = content,
-                pageSize = PageSize.Fixed(150.dp),
-                pageSpacing = 16.dp,
-                verticalAlignment = androidx.compose.ui.Alignment.Top
-            ) { itemIndex: Int ->
-                ContentItem(shelfList[shelfIndex].items[itemIndex])
-            }
-
         }
     }
 }
